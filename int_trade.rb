@@ -2,26 +2,37 @@ require "csv"
 require "rexml/document"
 include REXML
 
-doc = Document.new File.new("RATES.xml")
+# return a hash of conversion rates
+def get_conversion_info(ratesfile)
 
-from_elements = []
-to_elements = []
-conversion_elements = []
+	doc = Document.new File.new(ratesfile)
 
-XPath.each( doc, "//from") { |element| from_elements << element.text } 
-XPath.each( doc, "//to") { |element| to_elements << element.text } 
-XPath.each( doc, "//conversion") { |element| conversion_elements << element.text } 
+	from_elements = []
+	to_elements = []
+	conversion_elements = []
 
-conversion_hash = {}
-(0..(from_elements.size-1)).each do |count|
-	conversion_hash[[from_elements[count], to_elements[count]]] = conversion_elements[count]
+	XPath.each( doc, "//from") { |element| from_elements << element.text } 
+	XPath.each( doc, "//to") { |element| to_elements << element.text } 
+	XPath.each( doc, "//conversion") { |element| conversion_elements << element.text } 
+
+	conversion_hash = {}
+	(0..(from_elements.size-1)).each do |count|
+		conversion_hash[[from_elements[count], to_elements[count]]] = conversion_elements[count]
+	end
+
+	return conversion_hash
 end
 
-p conversion_hash
-
-CSV.foreach("trans.csv") do |row|
-  # use row here...
-  p row
+def find_items(item, itemfile)
+	found_items = []
+	CSV.foreach(itemfile) do |row|
+  	if row[1] == item
+  		found_items << row[2]
+  	end
+	end
+	return found_items
 end
 
-exit
+desired_units = "USD"
+p get_conversion_info("RATES.xml")
+p find_items("DM1182", "trans.csv")
