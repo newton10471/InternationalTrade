@@ -16,9 +16,16 @@ class Trader
 		XPath.each( doc, "//to") { |element| to_elements << element.text } 
 		XPath.each( doc, "//conversion") { |element| conversion_elements << element.text } 
 
-		@rates = {}
+		# @rates = {}
+		# (0..(from_elements.size-1)).each do |count|
+		# 	@rates[[from_elements[count], to_elements[count]]] = conversion_elements[count]
+		# end
+
+		@rates = []
+
 		(0..(from_elements.size-1)).each do |count|
-			@rates[[from_elements[count], to_elements[count]]] = conversion_elements[count]
+		  arrayelement = [from_elements[count], to_elements[count], conversion_elements[count]]
+			@rates << arrayelement
 		end
 
 		return @rates
@@ -36,30 +43,37 @@ class Trader
 
 	def conversion_factor(from_unit, to_unit)
 		# find all the pairs that start with from_unit
-		from_pairs = {}
+		from_pairs = []
 		@rates.each_with_index do |rate, index|
-			if @rates.keys[index][0] == from_unit
-				p rate
-				p rate.class
-				p @rates
-				p @rates.class
-				#from_pairs << rate
-			end
-			# p @rates.keys
-			# if rate.keys[0] == from_unit
-			# 	from_pairs << rate
-			# end	
+			if @rates[index][0] == from_unit
+				from_pairs << rate
+			end	
 		end
 
 		p "from_pairs: #{from_pairs}"
 
 		# find all the pairs that end with to_unit
+		to_pairs = []
+		@rates.each_with_index do |rate, index|
+			if @rates[index][1] == to_unit
+				to_pairs << rate
+			end	
+		end
+
+		p "to_pairs: #{to_pairs}"
 
 
 		# see if we can find a match
+		factor = 0 # default value
+		from_pairs.each_with_index do |pair, index|
+			p "pair[1]: #{pair[1]}, to_pairs[index]: #{to_pairs[index]}"
+			if pair[1] == to_pairs[index][0]
+				factor = pair[2].to_f * to_pairs[index][2].to_f
+				p "matched on #{to_pairs[index]}, factor is #{factor}!"
+			end
+		end
 
-		result = 0 # change this
-		return result
+		return factor
 	end
 
 end
@@ -67,6 +81,7 @@ end
 desired_units = "USD"
 myTrader = Trader.new
 p myTrader.get_rates("RATES.xml")
+# exit
 found_items = myTrader.find_items("DM1182", "trans.csv")
 p found_items
 
