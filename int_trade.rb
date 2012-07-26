@@ -17,11 +17,6 @@ class Trader
 		XPath.each( doc, "//to") { |element| to_elements << element.text } 
 		XPath.each( doc, "//conversion") { |element| conversion_elements << element.text } 
 
-		# @rates = {}
-		# (0..(from_elements.size-1)).each do |count|
-		# 	@rates[[from_elements[count], to_elements[count]]] = conversion_elements[count]
-		# end
-
 		@rates = []
 
 		(0..(from_elements.size-1)).each do |count|
@@ -51,7 +46,7 @@ class Trader
 			end	
 		end
 
-		p "from_pairs: #{from_pairs}"
+		#p "from_pairs: #{from_pairs}"
 
 		# find all the pairs that end with to_unit
 		to_pairs = []
@@ -61,14 +56,13 @@ class Trader
 			end	
 		end
 
-		p "to_pairs: #{to_pairs}"
+		#p "to_pairs: #{to_pairs}"
 
 
 		# see if we can find a match
 		factors = [] # default value
 		from_pairs.each_with_index do |pair, index|
 			if pair[1] == to_pairs[index][0]
-				# factor = pair[2].to_f * to_pairs[index][2].to_f
 				factors << pair[2].to_f
 				factors << to_pairs[index][2].to_f
 			end
@@ -81,29 +75,26 @@ end
 
 BigDecimal.mode(BigDecimal::ROUND_MODE, :banker)  # BigDecimal class method to set proper rounding behavior (Banker's rounding)
 desired_units = "USD"
+item = "DM1182"
 myTrader = Trader.new
-p myTrader.get_rates("RATES.xml")
-# exit
-found_items = myTrader.find_items("DM1182", "trans.csv")
-p found_items
+myTrader.get_rates("RATES.xml")
+found_items = myTrader.find_items(item, "trans.csv")
 
 total = 0
 
 found_items.each do |item|
 	str_amount, currency = item.split()
 	amount = str_amount.to_f
-	# p "amount: #{amount}, currency: #{currency}"
 	if (currency == desired_units)
 			total += amount
-			p "total is #{total}"
+			# p "total is #{total}"
 			# (round total)
 			total = total.round(2)
 	else
 		factors = myTrader.conversion_factors(currency,desired_units)
 		factors.each do |factor|
-			#p "factor is #{factor}"
 			amount = amount * factor
-			p "amount is #{amount}"
+			# p "amount is #{amount}"
 			# (round amount)
 			amount = amount.round(2)
 		end
@@ -111,4 +102,7 @@ found_items.each do |item|
 	end
 end
 
-p total
+# puts "The grand total of sales for item #{item} across all stores in #{desired_units} currency is #{total}."
+f = File.open("OUTPUT.txt", "w")
+f.puts(total)
+f.close
