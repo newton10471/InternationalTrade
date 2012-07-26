@@ -1,3 +1,4 @@
+require 'bigdecimal'
 require "csv"
 require "rexml/document"
 include REXML
@@ -41,7 +42,7 @@ class Trader
 		return @found_items
 	end
 
-	def conversion_factor(from_unit, to_unit)
+	def conversion_factors(from_unit, to_unit)
 		# find all the pairs that start with from_unit
 		from_pairs = []
 		@rates.each_with_index do |rate, index|
@@ -64,20 +65,21 @@ class Trader
 
 
 		# see if we can find a match
-		factor = 0 # default value
+		factors = [] # default value
 		from_pairs.each_with_index do |pair, index|
-			p "pair[1]: #{pair[1]}, to_pairs[index]: #{to_pairs[index]}"
 			if pair[1] == to_pairs[index][0]
-				factor = pair[2].to_f * to_pairs[index][2].to_f
-				p "matched on #{to_pairs[index]}, factor is #{factor}!"
+				# factor = pair[2].to_f * to_pairs[index][2].to_f
+				factors << pair[2].to_f
+				factors << to_pairs[index][2].to_f
 			end
 		end
 
-		return factor
+		return factors
 	end
 
 end
 
+BigDecimal.mode(BigDecimal::ROUND_MODE, :banker)  # BigDecimal class method to set proper rounding behavior (Banker's rounding)
 desired_units = "USD"
 myTrader = Trader.new
 p myTrader.get_rates("RATES.xml")
@@ -90,11 +92,22 @@ total = 0
 found_items.each do |item|
 	str_amount, currency = item.split()
 	amount = str_amount.to_f
-	p "amount: #{amount}, currency: #{currency}"
+	# p "amount: #{amount}, currency: #{currency}"
 	if (currency == desired_units)
 			total += amount
+			p "total is #{total}"
+			# (round total)
+			total = total.round(2)
 	else
-		total += amount * myTrader.conversion_factor(currency,desired_units)
+		factors = myTrader.conversion_factors(currency,desired_units)
+		factors.each do |factor|
+			#p "factor is #{factor}"
+			amount = amount * factor
+			p "amount is #{amount}"
+			# (round amount)
+			amount = amount.round(2)
+		end
+		total += amount
 	end
 end
 
