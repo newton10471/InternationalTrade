@@ -1,4 +1,4 @@
-require 'bigdecimal'
+# require 'bigdecimal'
 require "csv"
 require "rexml/document"
 include REXML
@@ -37,7 +37,7 @@ class Trader
 		return @found_items
 	end
 
-	def conversion_factors(from_unit, to_unit)
+	def conversion_factor(from_unit, to_unit)
 		# find all the pairs that start with from_unit
 		from_pairs = []
 		@rates.each_with_index do |rate, index|
@@ -60,25 +60,37 @@ class Trader
 
 
 		# see if we can find a match
-		factors = [] # default value
+		factor = 0 # default value
 		from_pairs.each_with_index do |pair, index|
 			if pair[1] == to_pairs[index][0]
-				factors << pair[2].to_f
-				factors << to_pairs[index][2].to_f
+				# factor << pair[2].to_f
+				# factor << to_pairs[index][2].to_f
+				factor = pair[2].to_f * to_pairs[index][2].to_f
 			end
 		end
 
-		return factors
+		if factor == 0 
+			puts "WARNING: no conversion value found!"
+		end
+
+		return factor
+	end
+
+	def rates
+		@rates
 	end
 
 end
 
-BigDecimal.mode(BigDecimal::ROUND_MODE, :banker)  # BigDecimal class method to set proper rounding behavior (Banker's rounding)
+# BigDecimal.mode(BigDecimal::ROUND_MODE, :banker)  # BigDecimal class method to set proper rounding behavior (Banker's rounding)
 desired_units = "USD"
 item = "DM1182"
 myTrader = Trader.new
-myTrader.get_rates("RATES.xml")
-found_items = myTrader.find_items(item, "trans.csv")
+myTrader.get_rates("SAMPLE_RATES.xml")
+found_items = myTrader.find_items(item, "SAMPLE_TRANS.csv")
+
+p myTrader.rates
+p found_items
 
 total = 0
 
@@ -86,23 +98,18 @@ found_items.each do |item|
 	str_amount, currency = item.split()
 	amount = str_amount.to_f
 	if (currency == desired_units)
-			total += amount
-			# p "total is #{total}"
-			# (round total)
-			total = total.round(2)
+		total += amount
+		total = total.round(2)
 	else
-		factors = myTrader.conversion_factors(currency,desired_units)
-		factors.each do |factor|
-			amount = amount * factor
-			# p "amount is #{amount}"
-			# (round amount)
-			amount = amount.round(2)
-		end
+		factor = myTrader.conversion_factor(currency,desired_units)
+		amount = amount * factor
+		amount = amount.round(2)
 		total += amount
 	end
 end
 
+puts "total: #{total}"
 # puts "The grand total of sales for item #{item} across all stores in #{desired_units} currency is #{total}."
-f = File.open("OUTPUT.txt", "w")
-f.puts(total)
-f.close
+# f = File.open("OUTPUT.txt", "w")
+# f.puts(total)
+# f.close
