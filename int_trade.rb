@@ -17,14 +17,21 @@ class Trader
 		XPath.each( doc, "//to") { |element| to_elements << element.text } 
 		XPath.each( doc, "//conversion") { |element| conversion_elements << element.text } 
 
-		@rates = []
+		# @rates = []
 
-		(0..(from_elements.size-1)).each do |count|
-		  arrayelement = [from_elements[count], to_elements[count], conversion_elements[count]]
-			@rates << arrayelement
-		end
+		# (0..(from_elements.size-1)).each do |count|
+		#   arrayelement = [from_elements[count], to_elements[count], conversion_elements[count]]
+		# 	@rates << arrayelement
+		# end
 
-		return @rates
+		# return @rates
+
+		@rates = {}
+    (0..(from_elements.size-1)).each do |count|
+    	@rates[[from_elements[count], to_elements[count]]] = conversion_elements[count]
+    end
+ 	 
+    return @rates
 	end
 
 	def find_items(item, itemfile)
@@ -62,6 +69,8 @@ class Trader
 		# see if we can find a match
 		factor = 0 # default value
 		from_pairs.each_with_index do |pair, index|
+			p "pair: #{pair}, to_pairs: #{to_pairs}"
+			p "pair[1]: #{pair[1]}, to_pairs[index][0]: #{to_pairs[index][0]}"
 			if pair[1] == to_pairs[index][0]
 				# factor << pair[2].to_f
 				# factor << to_pairs[index][2].to_f
@@ -76,6 +85,25 @@ class Trader
 		return factor
 	end
 
+	def build_conversion_table(desired_units)
+		# find all the unique currencies
+		keyarray = []
+		@rates.keys.each do |keys| 
+			keyarray << keys[0]
+			keyarray << keys[1]
+		end 
+
+		desired_units_array = []
+		desired_units_array << desired_units
+		from_currencies = keyarray.uniq - desired_units_array
+
+		# find conversion factors from each currency (EUR, AUD, CAD) to USD
+		# find one that already exists to go to -> USD (which is CAD)
+		# work backwards from that one?  going to the next which a) points to CAD, and b) isn't yet populated
+
+		return from_currencies
+	end
+
 	def rates
 		@rates
 	end
@@ -86,11 +114,19 @@ end
 desired_units = "USD"
 item = "DM1182"
 myTrader = Trader.new
-myTrader.get_rates("SAMPLE_RATES.xml")
+myTrader.get_rates("RATES.xml")
 found_items = myTrader.find_items(item, "SAMPLE_TRANS.csv")
 
-p myTrader.rates
+myTrader.rates.each do |rate|
+	p rate
+end
+p myTrader.rates[["CAD","USD"]].to_f
+
+p myTrader.build_conversion_table(desired_units)
+
 p found_items
+
+exit
 
 total = 0
 
